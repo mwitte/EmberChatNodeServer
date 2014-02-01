@@ -7,6 +7,12 @@ function ChatServer(logger) {
     this.logger = logger;
     this.clients = {};
     this.nicknames = ['Matthias', 'Dominik', 'Prof. Dr. Bert', 'Bam Oida'];
+    this.users = [
+        {id: 'de713bf89dd84fd5648a08b8ba4a5d1b18a964c1', name: 'Matthias'},
+        {id: '01b7974ee4de9fba4cb4e777a29673163ed4347d', name: 'Dominik'},
+        {id: '22caebc61d4bbdf69fa6b19da6b10ae3dca5a2cf', name: 'Prof. Dr. Bert'},
+        {id: '43954a1bc424d641406148334c3c4defa4b45f47', name: 'Bam Oida'}
+    ];
     this.messageHandler = new MessageHandlerClass(this, logger);
 
     this.logger.log('info', 'Chatserver started');
@@ -65,11 +71,8 @@ method.disconnect = function(connection) {
         if(client.connection === connection){
 
             this.logger.log('info', 'Client disconnected: ' + client.user.id);
-
-            var id = String(client.user.id);
-            var name = String(client.user.name);
             delete this.clients[client.user.id];
-            this.nicknames.push(name);
+            this.users.push(client.user);
             this.broadcastUserList();
             break;
         }
@@ -89,21 +92,18 @@ method.findClientByConnection = function(connection){
 method.sendInitialUserSettings= function(client) {
     var initialSettings = {
         type: "settings",
-        userName: client.user.name,
-        userId: client.user.id
+        user: client.user
     };
     client.connection.sendUTF(JSON.stringify(initialSettings));
 };
 
 
 method.generateUserData = function() {
+    /*
     var seed = crypto.randomBytes(20);
     var userId = crypto.createHash('sha1').update(seed).digest('hex');
-
-    return {
-        id: userId,
-        name: String(this.nicknames.shift())
-    };
+    */
+    return this.users.shift();
 };
 
 method.broadcastUserList = function() {
