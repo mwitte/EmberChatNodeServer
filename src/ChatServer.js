@@ -1,18 +1,22 @@
 var crypto = require('crypto');
 var MessageHandlerClass = require('./ChatServer/MessageHandler');
 
+var RoomRepositoryClass = require('./ChatServer/RoomRepository');
+
 var method = ChatServer.prototype;
 
 function ChatServer(logger) {
     this.logger = logger;
     this.clients = {};
-    this.nicknames = ['Matthias', 'Dominik', 'Prof. Dr. Bert', 'Bam Oida'];
     this.users = [
         {id: 'de713bf89dd84fd5648a08b8ba4a5d1b18a964c1', name: 'Matthias'},
         {id: '01b7974ee4de9fba4cb4e777a29673163ed4347d', name: 'Dominik'},
         {id: '22caebc61d4bbdf69fa6b19da6b10ae3dca5a2cf', name: 'Prof. Dr. Bert'},
         {id: '43954a1bc424d641406148334c3c4defa4b45f47', name: 'Bam Oida'}
     ];
+
+    this.roomRepository = new RoomRepositoryClass();
+
     this.messageHandler = new MessageHandlerClass(this, logger);
 
     this.logger.log('info', 'Chatserver started');
@@ -27,7 +31,9 @@ method.getClientById = function(id){
 };
 
 
+
 method.connect = function(connection) {
+
     this.logger.log('info', 'Client connected with ' + connection.remoteAddress);
 
     var client = {
@@ -89,14 +95,10 @@ method.findClientByConnection = function(connection){
     return null;
 };
 
-method.sendInitialUserSettings= function(client) {
-    var initialSettings = {
-        type: "settings",
-        user: client.user
-    };
-    client.connection.sendUTF(JSON.stringify(initialSettings));
+method.generateHash = function() {
+    var seed = crypto.randomBytes(20);
+    return crypto.createHash('sha1').update(seed).digest('hex');
 };
-
 
 method.generateUserData = function() {
     /*
@@ -104,6 +106,14 @@ method.generateUserData = function() {
     var userId = crypto.createHash('sha1').update(seed).digest('hex');
     */
     return this.users.shift();
+};
+
+method.sendInitialUserSettings= function(client) {
+    var initialSettings = {
+        type: "Settings",
+        user: client.user
+    };
+    client.connection.sendUTF(JSON.stringify(initialSettings));
 };
 
 method.broadcastUserList = function() {
@@ -123,7 +133,7 @@ method.sendUserList = function(currentClient) {
     }
 
     var message = {
-        type: "userlist",
+        type: "Userlist",
         content: usersData
     };
     currentClient.connection.sendUTF(JSON.stringify(message));
